@@ -12,6 +12,8 @@ If ( -not ( Test-Path -Path .\WolClientConfig.xml ) )  {
     Exit
 }
 
+[xml]$configFile = Get-Content -Path .\WolClientConfig.xml
+
 
 ###########################
 # FASE1 Verifica internet #
@@ -155,7 +157,7 @@ compression:i:1
 keyboardhook:i:2
 audiocapturemode:i:0
 videoplaybackmode:i:1
-username:s:${PcUser}
+username:s:$($configFile.Settings.Pc.Username)
 connection type:i:3
 networkautodetect:i:0
 bandwidthautodetect:i:1
@@ -169,7 +171,7 @@ disable menu anims:i:1
 disable themes:i:0
 disable cursor setting:i:0
 bitmapcachepersistenable:i:1
-full address:s:${PcIp}
+full address:s:$($configFile.Settings.Pc.Host)
 audiomode:i:2
 redirectprinters:i:0
 redirectcomports:i:0
@@ -194,5 +196,7 @@ use redirection server name:i:0
 rdgiskdcproxy:i:0
 kdcproxyname:s:
 "
+echo $RdpContent
+
 $RdpContent | Out-File "rdp.rdp"
 Start-Process -FilePath "$env:SystemRoot\system32\mstsc.exe" -ArgumentList "rdp.rdp"
