@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<Settings>
+<pfSense>
+	<Host>192.168.2.254</Host>
+	<Username>woluser</Username>
+	<Password>wolpassword</Password>
+</pfSense>
+<Pc>
+	<Mac>aa:bb:cc:dd:ee:ff</Mac>
+	<Host>userpc.mydomain.lan</Host>
+	<Username>mydomain\username</Username>
+</Pc>
+<Vpn>
+	<VpnFile>AUTO</VpnFile>
+	<!-- if set to AUTO, it selects the first .ovpn found in %userprofile%\OpenVPN\config -->
+</Vpn>
+</Settings>
