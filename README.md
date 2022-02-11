@@ -4,11 +4,11 @@ A script to simplify power on of remote computers while connected via OpenVPN/pf
 
 User just need to run the script, follow instructions and wait for RDP to come  up.
 
-## pfSense setup
+## pfSense setup / server side
 
 - Setup OpenVPN Server as you like.
 
-  Hint: providing a DNS Server able to resolve dhcp clients hostnames can sometimes simplify things.
+  Hint: providing a DNS Server able to resolve dhcp clients hostnames can simplify things.
 
 - Setup the firewall to allow OpenVPN clients reach pfSense (https) and the remote computer (rdp).
 
@@ -16,8 +16,9 @@ User just need to run the script, follow instructions and wait for RDP to come  
 
 - Edit the Wake On Lan user, set "WebCfg - Services: Wake-on-LAN" under "Effective Privileges".
 
-## WolClient setup
+## WolClient setup / client side
 
+- Install [OpenVPN](https://openvpn.net/community-downloads/) and copy the configuration file in %userprofile%\OpenVPN\config
 - Download this repository and save in a known directory.
 - Create/edit WolClientConfig.xml with required settings:
   - pfSense Hostname
@@ -26,5 +27,4 @@ User just need to run the script, follow instructions and wait for RDP to come  
   - Remote PC hostname/ip
   - Remote PC mac address
   - Remote PC username (used in RDP)
-- Make a link to the WolClient.cmd file for the user.
-
+- Make a link to the WolClient.cmd file for the user. 
