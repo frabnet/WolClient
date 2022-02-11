@@ -75,7 +75,7 @@ function TestConn([string]$srv,$port=135,$timeout=3000,[switch]$verbose){
 
 
 Function SendWakeOnLan {
-Write-Host -NoNewline "Invio comando accensione: "
+Write-Host -NoNewline "Invio comando accensione... "
 #Ignora errore certificato self-signed
 add-type @"
     using System.Net;
@@ -89,7 +89,7 @@ add-type @"
     }
 "@
 [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-
+$pfSenseUrl = "https://$($configFile.Settings.pfSense.Host)"
 $Timeout = 10
 #Pagina iniziale (per token csrf)
 $LoginPage = Invoke-WebRequest -TimeoutSec $Timeout -Uri $pfSenseUrl -SessionVariable Session
@@ -107,7 +107,6 @@ $Result = Invoke-WebRequest -TimeoutSec $Timeout -WebSession $Session -Uri $pfSe
 $CsrfToken = $Result.InputFields.FindByName('__csrf_magic').Value
 
 #Wake on lan
-$pfSenseUrl = "https://${pfSenseIp}"
 $Data = @{
 	__csrf_magic=$CsrfToken;
 	if='lan';
@@ -134,7 +133,7 @@ $CsrfToken = $Result.InputFields.FindByName('__csrf_magic').Value
 
 Write-Host -NoNewline "Verifica accensione PC..."
 if ( -Not ( TestConn -Srv $configFile.Settings.Pc.Host -Port 3389 -Timeout 600 ) ) {
-    Write-Host -ForegroundColor Red "Spento"
+    Write-Host -ForegroundColor Red " Spento"
     WaitForKey -Msg "Premere un tasto per accendere il computer."
     SendWakeOnLan
     Write-Host -NoNewLine "Attesa PC"
@@ -196,7 +195,6 @@ use redirection server name:i:0
 rdgiskdcproxy:i:0
 kdcproxyname:s:
 "
-echo $RdpContent
 
 $RdpContent | Out-File "rdp.rdp"
 Start-Process -FilePath "$env:SystemRoot\system32\mstsc.exe" -ArgumentList "rdp.rdp"
