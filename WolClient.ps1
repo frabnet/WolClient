@@ -1,8 +1,11 @@
+#Load localized strings
+If ( $psISE ) { Import-LocalizedData -BindingVariable msgTable -FileName "WolClient.psd1" } else { Import-LocalizedData -BindingVariable msgTable }
+
 Function WaitForKey {
     Param ($msg, $error=$false)
     If ($error) {
         Write-Host -ForegroundColor White -BackgroundColor Red $msg
-        Write-Host "Premere un tasto per uscire."
+        Write-Host $msgTable.promptExit
     } else {
         Write-Host $msg
     }    
@@ -18,8 +21,8 @@ Function TestTCPPort {
     Return $Connected
 }
 Function SendWakeOnLan {
-    Write-Host -NoNewline "Invio comando accensione... "
-    #Ignora errore certificato self-signed
+    Write-Host -NoNewline "$($msgTable.sendingWol)... "
+    #Ignore self signed cert
     add-type @"
     using System.Net;
     using System.Security.Cryptography.X509Certificates;
@@ -34,7 +37,7 @@ Function SendWakeOnLan {
     [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
     $pfSenseUrl = "https://$($configFile.Settings.pfSense.Host)"
     $Timeout = 10
-    #Pagina iniziale (per token csrf)
+    #Request homepage to extract csrf token
     $LoginPage = Invoke-WebRequest -TimeoutSec $Timeout -Uri $pfSenseUrl -SessionVariable Session
     $CsrfToken = $LoginPage.InputFields.FindByName('__csrf_magic').Value
 
@@ -60,9 +63,9 @@ Function SendWakeOnLan {
     $CsrfToken = $Result.InputFields.FindByName('__csrf_magic').Value
 
     if ($Result.RawContent -like "*Sent magic packet to*") {
-        Write-Host -ForegroundColor Green "Ok"
+        Write-Host -ForegroundColor Green $msgTable.strOk
     } else {
-        Write-Host -ForegroundColor Red "Errore"
+        Write-Host -ForegroundColor Red $msgTable.strErr
     }
 
     #Logout
@@ -76,23 +79,23 @@ Function SendWakeOnLan {
 
 # Read config file
 If ( -not ( Test-Path -Path .\WolClientConfig.xml ) )  {
-    WaitForKey -Msg "ERRORE: WolClientConfig.xml non trovato." -Error $true
+    WaitForKey -Msg $msgTable.errConfigNotFound -Error $true
     Exit
 }
 [xml]$configFile = Get-Content -Path .\WolClientConfig.xml
 
 # Check internet connection (ping www.google.it)
-Write-Host -NoNewLine "Verifica connessione internet... "
+Write-Host -NoNewLine "$($msgTable.checkingInternet)... "
 if ( Test-Connection -ComputerName "www.google.it" -Quiet -Count 2 ) {
-    Write-Host -ForegroundColor Green "Ok"
+    Write-Host -ForegroundColor Green $msgTable.strOk
 } else {
-    Write-Host -ForegroundColor Green "Errore"
-    WaitForKey -Msg "ERRORE: Connessione a internet non funzionante" -Error $true
+    Write-Host -ForegroundColor Green $msgTable.strErr
+    WaitForKey -Msg $msgTable.errNoInternet -Error $true
     Exit
 }
 
 #Check VPN Connection (tcp connect to pfSense:443)
-Write-Host -NoNewLine "Verifica connessione VPN..."
+Write-Host -NoNewLine "$($msgTable.checkingVpn)..."
 If (-not ( TestTCPPort -address $configFile.Settings.pfSense.Host -port 443 ) ) {
     # Search for the VPN file
     $VpnFile = $configFile.Settings.Vpn.VpnFile
@@ -104,21 +107,21 @@ If (-not ( TestTCPPort -address $configFile.Settings.pfSense.Host -port 443 ) ) 
         Sleep -Milliseconds 500
     }
 }
-Write-Host -ForegroundColor Green " Ok"
+Write-Host -ForegroundColor Green " $($msgTable.strOk)"
 
 #Check if PC is powered on (tcp connect to pc:3389)
-Write-Host -NoNewline "Verifica accensione PC..."
+Write-Host -NoNewline "$($msgTable.checkingPc)..."
 if ( -Not ( TestTCPPort -address $configFile.Settings.Pc.Host -Port 3389 ) ) {
-    Write-Host -ForegroundColor Red " Spento"
-    WaitForKey -Msg "Premere un tasto per accendere il computer."
+    Write-Host -ForegroundColor Red " $($msgTable.strPcTurnedOff)"
+    WaitForKey -Msg $msgTable.promptWol
     SendWakeOnLan
-    Write-Host -NoNewLine "Attesa PC"
+    Write-Host -NoNewLine $msgTable.strWaitingPc
     While ( -Not ( TestTCPPort -address $configFile.Settings.Pc.Host -Port 3389 ) ) {
         Write-Host -NoNewLine "."
         Sleep -Milliseconds 500
     }
 }
-Write-Host -ForegroundColor Green " Ok"
+Write-Host -ForegroundColor Green " $($msgTable.strOk)"
 
 # Start RDP Connection
 $RdpContent = "
