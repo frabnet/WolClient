@@ -1,7 +1,10 @@
 # WolClient
 
-A script to simplify power on of remote computers while connected via OpenVPN/pfSense VPN. Make users happy and save the planet :blossom:
-User just need to run the script, follow instructions and wait for RDP to come up.
+This is a PowerShell script to simplify power on of remote computers while connected via OpenVPN/pfSense VPN.  
+End user just need to run the script, follow instructions and wait for RDP to come up.  
+Make users happy and save the planet :blossom:
+
+Now also [available for Linux](https://github.com/frabnet/WolClient-Linux)! 🐧
 
 ## pfSense setup / server side
 
@@ -22,4 +25,4 @@ User just need to run the script, follow instructions and wait for RDP to come u
   - Remote PC hostname/ip
   - Remote PC mac address
   - Remote PC username (used in RDP)
-- Make a link to the WolClient.cmd file for the user. 
+- Make a link to the WolClient.cmd file for the user.
