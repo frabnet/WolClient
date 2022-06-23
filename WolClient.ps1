@@ -89,7 +89,7 @@ Write-Host -NoNewLine "$($msgTable.checkingInternet)... "
 if ( Test-Connection -ComputerName "www.google.it" -Quiet -Count 2 ) {
     Write-Host -ForegroundColor Green $msgTable.strOk
 } else {
-    Write-Host -ForegroundColor Green $msgTable.strErr
+    Write-Host -ForegroundColor Red $msgTable.strErr
     WaitForKey -Msg $msgTable.errNoInternet -Error $true
     Exit
 }
