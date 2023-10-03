@@ -35,7 +35,7 @@ Function SendWakeOnLan {
     }
 "@
     [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-    $pfSenseUrl = "https://$($configFile.Settings.pfSense.Host)"
+    $pfSenseUrl = "https://$($configFile.Settings.pfSense.Host):$($configFile.Settings.pfSense.Port)"
     $Timeout = 10
     #Request homepage to extract csrf token
     $LoginPage = Invoke-WebRequest -TimeoutSec $Timeout -Uri $pfSenseUrl -SessionVariable Session
