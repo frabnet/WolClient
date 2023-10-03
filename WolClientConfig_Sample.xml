@@ -2,6 +2,7 @@
 <Settings>
 <pfSense>
 	<Host>192.168.2.254</Host>
+	<Port>443</Port>
 	<Username>woluser</Username>
 	<Password>wolpassword</Password>
 </pfSense>

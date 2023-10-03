@@ -96,13 +96,13 @@ if ( Test-Connection -ComputerName "www.google.it" -Quiet -Count 2 ) {
 
 #Check VPN Connection (tcp connect to pfSense:443)
 Write-Host -NoNewLine "$($msgTable.checkingVpn)..."
-If (-not ( TestTCPPort -address $configFile.Settings.pfSense.Host -port 443 ) ) {
+If (-not ( TestTCPPort -address $configFile.Settings.pfSense.Host -port $configFile.Settings.pfSense.Port ) ) {
     # Search for the VPN file
     $VpnFile = $configFile.Settings.Vpn.VpnFile
     if ( $VpnFile -eq "AUTO" ) {$VpnFile = (Get-ChildItem -Path $Env:Userprofile\OpenVPN\config\*.ovpn | Select-Object -First 1).Name }
     # Launches OpenVPN gui with selected VPN profile
     Start-Process -FilePath "$env:programfiles\OpenVPN\bin\openvpn-gui.exe" -ArgumentList "--command connect $VpnFile"
-    While ( -not ( TestTCPPort -address $configFile.Settings.pfSense.Host -port 443 ) ) {        
+    While ( -not ( TestTCPPort -address $configFile.Settings.pfSense.Host -port $configFile.Settings.pfSense.Port ) ) {        
         Write-Host -NoNewline "."
         Sleep -Milliseconds 500
     }
