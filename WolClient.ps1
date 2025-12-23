@@ -38,7 +38,7 @@ Function SendWakeOnLan {
     $pfSenseUrl = "https://$($configFile.Settings.pfSense.Host):$($configFile.Settings.pfSense.Port)"
     $Timeout = 10
     #Request homepage to extract csrf token
-    $LoginPage = Invoke-WebRequest -TimeoutSec $Timeout -Uri $pfSenseUrl -SessionVariable Session
+    $LoginPage = Invoke-WebRequest -UseBasicParsing -TimeoutSec $Timeout -Uri $pfSenseUrl -SessionVariable Session
     $CsrfToken = $LoginPage.InputFields.FindByName('__csrf_magic').Value
 
     #Login
@@ -49,7 +49,7 @@ Function SendWakeOnLan {
 	    passwordfld=$Credential.GetNetworkCredential().Password;
 	    login='Login';
     }
-    $Result = Invoke-WebRequest -TimeoutSec $Timeout -WebSession $Session -Uri $pfSenseUrl -Method Post -Body $Data 
+    $Result = Invoke-WebRequest -UseBasicParsing -TimeoutSec $Timeout -WebSession $Session -Uri $pfSenseUrl -Method Post -Body $Data 
     $CsrfToken = $Result.InputFields.FindByName('__csrf_magic').Value
 
     #Wake on lan
@@ -59,7 +59,7 @@ Function SendWakeOnLan {
 	    mac= $configFile.Settings.Pc.Mac;
 	    Submit='Send';
     }
-    $Result = Invoke-WebRequest -TimeoutSec $Timeout -WebSession $Session -Uri "${pfSenseUrl}/services_wol.php" -Method Post -Body $Data 
+    $Result = Invoke-WebRequest -UseBasicParsing -TimeoutSec $Timeout -WebSession $Session -Uri "${pfSenseUrl}/services_wol.php" -Method Post -Body $Data 
     $CsrfToken = $Result.InputFields.FindByName('__csrf_magic').Value
 
     if ($Result.RawContent -like "*Sent magic packet to*") {
@@ -73,7 +73,7 @@ Function SendWakeOnLan {
         __csrf_magic=$CsrfToken;
         logout=""
     }
-    $Result = Invoke-WebRequest -TimeoutSec $Timeout -WebSession $Session -Uri "${pfSenseUrl}/index.php?logout" -Method Post -Body $Data 
+    $Result = Invoke-WebRequest -UseBasicParsing -TimeoutSec $Timeout -WebSession $Session -Uri "${pfSenseUrl}/index.php?logout" -Method Post -Body $Data 
     $CsrfToken = $Result.InputFields.FindByName('__csrf_magic').Value
 }
 
