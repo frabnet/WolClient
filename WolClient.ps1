@@ -81,11 +81,20 @@ Function SendWakeOnLan {
 }
 
 # Read config file
-If ( -not ( Test-Path -Path .\WolClientConfig.xml ) )  {
+$configPath = (Resolve-Path ".\WolClientConfig.xml").Path
+If ( -not ( Test-Path -Path $configPath ) )  {
     WaitForKey -Msg $msgTable.errConfigNotFound -Error $true
-    Exit
+    Exit 1
 }
-[xml]$configFile = Get-Content -Path .\WolClientConfig.xml
+[xml]$configFile = Get-Content -Path $configPath
+
+# Ensure <Rdp> section exists (automatically update older configs)
+if ($null -eq $configFile.Settings.Rdp) {
+    $rdpNode = $configFile.CreateElement("Rdp")
+    $rdpNode.SetAttribute("FileHash", "")
+    $configFile.Settings.AppendChild($rdpNode) | Out-Null
+    $configFile.Save($configPath)
+}
 
 # Check internet connection (ping www.google.it)
 Write-Host -NoNewLine "$($msgTable.checkingInternet)... "
@@ -94,7 +103,7 @@ if ( Test-Connection -ComputerName "www.google.it" -Quiet -Count 2 ) {
 } else {
     Write-Host -ForegroundColor Red $msgTable.strErr
     WaitForKey -Msg $msgTable.errNoInternet -Error $true
-    Exit
+    Exit 1
 }
 
 #Check VPN Connection (tcp connect to pfSense:443)
@@ -107,7 +116,7 @@ If (-not ( TestTCPPort -address $configFile.Settings.pfSense.Host -port $configF
     Start-Process -FilePath "$env:programfiles\OpenVPN\bin\openvpn-gui.exe" -ArgumentList "--command connect $VpnFile"
     While ( -not ( TestTCPPort -address $configFile.Settings.pfSense.Host -port $configFile.Settings.pfSense.Port ) ) {        
         Write-Host -NoNewline "."
-        Sleep -Milliseconds 500
+        Start-Sleep -Milliseconds 500
     }
 }
 Write-Host -ForegroundColor Green " $($msgTable.strOk)"
@@ -121,58 +130,46 @@ if ( -Not ( TestTCPPort -address $configFile.Settings.Pc.Host -Port 3389 ) ) {
     Write-Host -NoNewLine $msgTable.strWaitingPc
     While ( -Not ( TestTCPPort -address $configFile.Settings.Pc.Host -Port 3389 ) ) {
         Write-Host -NoNewLine "."
-        Sleep -Milliseconds 500
+        Start-Sleep -Milliseconds 500
     }
 }
 Write-Host -ForegroundColor Green " $($msgTable.strOk)"
 
-# Start RDP Connection
-$RdpContent = "
-screen mode id:i:2
-session bpp:i:16
-compression:i:1
-keyboardhook:i:2
-audiocapturemode:i:0
-videoplaybackmode:i:1
-username:s:$($configFile.Settings.Pc.Username)
-connection type:i:3
-networkautodetect:i:0
-bandwidthautodetect:i:1
-displayconnectionbar:i:1
-enableworkspacereconnect:i:0
-disable wallpaper:i:1
-allow font smoothing:i:0
-allow desktop composition:i:1
-disable full window drag:i:1
-disable menu anims:i:1
-disable themes:i:0
-disable cursor setting:i:0
-bitmapcachepersistenable:i:1
-full address:s:$($configFile.Settings.Pc.Host)
-audiomode:i:2
-redirectprinters:i:0
-redirectcomports:i:0
-redirectsmartcards:i:0
-redirectclipboard:i:1
-redirectposdevices:i:0
-drivestoredirect:s:
-autoreconnection enabled:i:1
-authentication level:i:0
-prompt for credentials:i:0
-negotiate security layer:i:1
-remoteapplicationmode:i:0
-alternate shell:s:
-shell working directory:s:
-gatewayhostname:s:
-gatewayusagemethod:i:4
-gatewaycredentialssource:i:4
-gatewayprofileusagemethod:i:0
-promptcredentialonce:i:0
-gatewaybrokeringtype:i:0
-use redirection server name:i:0
-rdgiskdcproxy:i:0
-kdcproxyname:s:
-"
-$RdpContent | Out-File "rdp.rdp"
-Sleep -Seconds 1
-Start-Process -FilePath "$env:SystemRoot\system32\mstsc.exe" -ArgumentList "rdp.rdp"
+$templatePath  = Join-Path (Resolve-Path ".\").Path "connection_template.rdp"
+$generatedPath = Join-Path (Resolve-Path ".\").Path "connection_generated.rdp"
+$signedPath    = Join-Path (Resolve-Path ".\").Path "connection_signed.rdp"
+
+# Generate RDP file with populated Host and Username from XML settings
+$templateContent = Get-Content -Path $templatePath -Raw
+$generatedContent = $templateContent -replace "\[username\]", $configFile.Settings.Pc.Username -replace "\[host\]", $configFile.Settings.Pc.Host
+Set-Content -Path $generatedPath -Value $generatedContent -Encoding ASCII
+
+# Sign if content changed or signed file is missing
+$sha256 = Get-FileHash -Path $generatedPath -Algorithm SHA256
+$currentHash = $sha256.Hash
+$needsSigning = ($currentHash -ne $configFile.Settings.Rdp.FileHash) -or (-not (Test-Path $signedPath))
+if ($needsSigning) {
+    WaitForKey -Msg $msgTable.promptSigning
+
+    $absScript = Join-Path (Resolve-Path ".\").Path "RDPSign.ps1"
+
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName        = "powershell.exe"
+    $psi.Arguments       = "-ExecutionPolicy Bypass -File `"$absScript`" -InputFile `"$generatedPath`" -OutputFile `"$signedPath`""
+    $psi.Verb            = "runas"
+    $psi.UseShellExecute = $true
+
+    $process = [System.Diagnostics.Process]::Start($psi)
+    $process.WaitForExit()
+
+    if ($process.ExitCode -ne 0) {
+        WaitForKey -Msg $msgTable.errSigning -error $true
+        Exit 1
+    }
+
+    $configFile.Settings.Rdp.FileHash = $currentHash
+    $configFile.Save($configPath)
+}
+
+# Launches connection-signed.rdp
+Start-Process -FilePath "$env:SystemRoot\system32\mstsc.exe" -ArgumentList $signedPath

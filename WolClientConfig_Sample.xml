@@ -15,4 +15,7 @@
 	<VpnFile>AUTO</VpnFile>
 	<!-- if set to AUTO, it selects the first .ovpn found in %userprofile%\OpenVPN\config -->
 </Vpn>
+<Rdp>
+	<FileHash></FileHash>
+</Rdp>
 </Settings>

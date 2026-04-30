@@ -11,4 +11,6 @@ strOk = Ok
 strErr = Errore
 strWaitingPc = Attesa PC
 strPcTurnedOff = Spento
+promptSigning = ATTENZIONE: I parametri RDP sono cambiati ed è necessario firmare nuovamente il file.\nPer favore conferma la richiesta UAC di Windows che apparirà a breve.\nPremi un tasto per continuare.
+errSigning = ERRORE: problemi durante la firma del file.
 '@
