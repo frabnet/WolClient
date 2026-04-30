@@ -11,15 +11,18 @@ Function WaitForKey {
     }    
     If ( $psISE ) { Pause } else {  [void][System.Console]::ReadKey($true) }    
 }
+
 Function TestTCPPort {
-    Param($address, $port, $timeout=500)
+    Param($address, $port, $timeout=800)
     $client = New-Object System.Net.Sockets.TcpClient
-    $beginConnect = $client.BeginConnect($address, $port, $null, $null)
-    Start-Sleep -Milliseconds $timeout
-    $Connected = $client.Connected
-    $client.Close()
-    Return $Connected
+    try {
+        $task = $client.ConnectAsync($address, $port)
+        $completed = $task.Wait($timeout)
+        return $completed -and $client.Connected
+    } catch { return $false }
+    finally { $client.Dispose() }
 }
+
 Function SendWakeOnLan {
     Write-Host -NoNewline "$($msgTable.sendingWol)... "
     #Ignore self signed cert
